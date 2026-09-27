@@ -1,0 +1,866 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Taipei 101 Damper Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #eaf0ee;
+    --surface: #f7faf9;
+    --surface-2: #e0e9e6;
+    --ink: #13272a;
+    --muted: #55696a;
+    --line: #c9d6d3;
+    --jade: #237565;
+    --rust: #bf4b31;
+    --gold: #c89b1e;
+    --gold-ink: #8a6a0c;
+    --sky-top: #bfd6da;
+    --sky-bot: #eaf0ee;
+    --glass: #6aa697;
+    --glass-dark: #2f6a5e;
+    --city: #c3d1ce;
+    --chamber: #1b3033;
+    --ok: #2f7d4f;
+    --warn: #a86a00;
+    --bad: #b43a2a;
+    --focus: #1c6fd0;
+    --display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0b1617;
+      --surface: #112123;
+      --surface-2: #172d30;
+      --ink: #e2ece9;
+      --muted: #93a9a6;
+      --line: #25393b;
+      --jade: #5cc4aa;
+      --rust: #f07c5f;
+      --gold: #e2b63f;
+      --gold-ink: #e8c25a;
+      --sky-top: #050c16;
+      --sky-bot: #122729;
+      --glass: #3f7c72;
+      --glass-dark: #6fb3a3;
+      --city: #1a2e30;
+      --chamber: #07100f;
+      --ok: #62c98a;
+      --warn: #e5a93a;
+      --bad: #f07360;
+      --focus: #7fb3ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0b1617;
+    --surface: #112123;
+    --surface-2: #172d30;
+    --ink: #e2ece9;
+    --muted: #93a9a6;
+    --line: #25393b;
+    --jade: #5cc4aa;
+    --rust: #f07c5f;
+    --gold: #e2b63f;
+    --gold-ink: #e8c25a;
+    --sky-top: #050c16;
+    --sky-bot: #122729;
+    --glass: #3f7c72;
+    --glass-dark: #6fb3a3;
+    --city: #1a2e30;
+    --chamber: #07100f;
+    --ok: #62c98a;
+    --warn: #e5a93a;
+    --bad: #f07360;
+    --focus: #7fb3ff;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.55 var(--sans);
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 28px; }
+
+  header { display: grid; gap: 8px; max-width: 70ch; }
+  .eyebrow {
+    font: 500 12px/1.2 var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold-ink);
+    margin: 0;
+  }
+  h1 {
+    font: 800 clamp(40px, 7vw, 72px)/0.92 var(--display);
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h1 .ball-dot {
+    display: inline-block; width: 0.62em; height: 0.62em; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fbe7a1, var(--gold) 55%, #7a5a08);
+    vertical-align: 0.06em; margin-left: 0.08em;
+  }
+  h2 {
+    font: 600 26px/1.05 var(--display);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h3 { font: 600 14px/1.3 var(--sans); margin: 0; }
+  p { margin: 0; }
+  .lede { color: var(--muted); font-size: 16px; }
+
+  .lab { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .lab { grid-template-columns: minmax(0, 1fr); } }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .stage { overflow: hidden; }
+  .verdict {
+    display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--line);
+  }
+  .verdict strong { font: 800 30px/1 var(--display); color: var(--jade); font-variant-numeric: tabular-nums; }
+  .verdict .v-text { font-size: 14px; color: var(--muted); }
+  .verdict .v-text b { color: var(--ink); font-weight: 600; }
+  #sky { display: block; width: 100%; height: 440px; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
+  .col { padding: 14px 16px 16px; display: grid; gap: 10px; min-width: 0; }
+  .col + .col { border-left: 1px solid var(--line); }
+  .col-head { display: flex; align-items: center; gap: 8px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+  .chamber { width: 100%; height: 150px; display: block; border-radius: 6px; background: var(--chamber); }
+  .reads { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 0; }
+  .reads div { display: grid; gap: 1px; min-width: 0; }
+  .reads dt { font: 500 11px/1.3 var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .reads dd { margin: 0; font: 500 18px/1.2 var(--mono); font-variant-numeric: tabular-nums; }
+  .chip {
+    display: inline-block; font: 600 11px/1 var(--sans); letter-spacing: 0.03em;
+    padding: 4px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap;
+  }
+  .chip.ok { color: var(--ok); } .chip.warn { color: var(--warn); } .chip.bad { color: var(--bad); }
+  @media (max-width: 560px) {
+    .cols { grid-template-columns: 1fr; }
+    .col + .col { border-left: 0; border-top: 1px solid var(--line); }
+    #sky { height: 380px; }
+  }
+
+  .controls { padding: 18px; display: grid; gap: 20px; }
+  .group { display: grid; gap: 10px; }
+  .group-label { font: 500 11px/1.2 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  button {
+    font: 500 13px/1.2 var(--sans); color: var(--ink); background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 6px; padding: 8px 11px; cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .field { display: grid; gap: 4px; }
+  .field-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .field label { font-weight: 600; font-size: 14px; }
+  .field output { font: 500 13px/1.2 var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+  .hint { font-size: 12.5px; color: var(--muted); }
+  input[type="range"] { width: 100%; accent-color: var(--jade); margin: 4px 0; }
+  .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .row-btns button { flex: 1 1 auto; }
+  .primary { background: var(--gold); color: #1d1602; border-color: var(--gold); font-weight: 600; }
+  .primary:hover { border-color: var(--ink); }
+  details summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  details[open] summary { margin-bottom: 12px; }
+  details .group { gap: 14px; }
+
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .charts { grid-template-columns: 1fr; } }
+  .chart { padding: 16px 18px; display: grid; gap: 8px; min-width: 0; }
+  .chart canvas { width: 100%; height: 230px; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+  .how { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+  @media (max-width: 900px) { .how { grid-template-columns: minmax(0, 1fr); } }
+  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; counter-reset: s; }
+  .steps li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; counter-increment: s; }
+  .steps li::before {
+    content: counter(s); font: 800 30px/1 var(--display); color: var(--gold-ink);
+  }
+  .steps h3 { font-size: 15px; margin-bottom: 3px; }
+  .steps p { color: var(--muted); max-width: 62ch; }
+  .facts { padding: 18px; display: grid; gap: 12px; }
+  .facts dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; }
+  .facts dt { color: var(--muted); font-size: 13.5px; }
+  .facts dd { margin: 0; font: 500 13.5px/1.45 var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+  .note { font-size: 12.5px; color: var(--muted); max-width: 90ch; }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Tuned mass damper · floors 87–92 · 660 tonnes</p>
+    <h1>Taipei 101 Damper Lab<span class="ball-dot" aria-hidden="true"></span></h1>
+    <p class="lede">Two identical towers face the same wind. The one on the right has the golden pendulum hanging near its top; the one on the left has it locked. Change the wind and watch how the ball swings against the building to calm it down.</p>
+  </header>
+
+  <section class="lab">
+    <div class="panel stage">
+      <div class="verdict" aria-live="polite">
+        <span class="v-text" id="verdictText">Averaged over the last 30 s, the damper cuts roof sway by</span>
+        <strong id="reduction">–</strong>
+      </div>
+      <canvas id="sky" aria-label="Animated side view of two Taipei 101 towers swaying in the wind. Left tower has no damper, right tower has the damper."></canvas>
+      <div class="cols">
+        <div class="col">
+          <div class="col-head"><span class="swatch" style="background: var(--rust)"></span><h3>Without damper (ball locked)</h3></div>
+          <canvas class="chamber" id="chamberA" aria-hidden="true"></canvas>
+          <dl class="reads">
+            <div><dt>Roof sway now</dt><dd id="aNow">0 cm</dd></div>
+            <div><dt>Peak, last 30 s</dt><dd id="aPeak">0 cm</dd></div>
+            <div><dt>Peak acceleration</dt><dd id="aAcc">0 milli-g</dd></div>
+            <div><dt>How it feels</dt><dd id="aFeel"><span class="chip ok">Not felt</span></dd></div>
+          </dl>
+        </div>
+        <div class="col">
+          <div class="col-head"><span class="swatch" style="background: var(--jade)"></span><h3>With damper (ball free to swing)</h3></div>
+          <canvas class="chamber" id="chamberB" aria-hidden="true"></canvas>
+          <dl class="reads">
+            <div><dt>Roof sway now</dt><dd id="bNow">0 cm</dd></div>
+            <div><dt>Peak, last 30 s</dt><dd id="bPeak">0 cm</dd></div>
+            <div><dt>Peak acceleration</dt><dd id="bAcc">0 milli-g</dd></div>
+            <div><dt>Ball swing, peak</dt><dd id="bBall">0 cm</dd></div>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel controls" aria-label="Controls">
+      <div class="group">
+        <span class="group-label">Presets</span>
+        <div class="presets" id="presets">
+          <button type="button" data-preset="breeze">Everyday breeze</button>
+          <button type="button" data-preset="monsoon">Winter monsoon</button>
+          <button type="button" data-preset="soudelor">Typhoon Soudelor 2015</button>
+          <button type="button" data-preset="lockin">Resonance lock-in</button>
+          <button type="button" data-preset="mistuned">Mistuned damper</button>
+        </div>
+        <p class="hint" id="presetNote">Pick a scenario, or drag the sliders.</p>
+      </div>
+
+      <div class="group">
+        <div class="field">
+          <div class="field-top"><label for="wind">Wind speed at the top</label><output id="windOut" for="wind"></output></div>
+          <input type="range" id="wind" min="0" max="70" step="1" value="22">
+          <span class="hint" id="windCat"></span>
+        </div>
+        <div class="field">
+          <div class="field-top"><label for="gust">Gustiness</label><output id="gustOut" for="gust"></output></div>
+          <input type="range" id="gust" min="0" max="40" step="1" value="20">
+          <span class="hint">How much the wind speed flickers around its average (turbulence intensity).</span>
+        </div>
+      </div>
+
+      <div class="row-btns">
+        <button type="button" class="primary" id="shove">Shove both towers</button>
+        <button type="button" id="pause" aria-pressed="false">Pause</button>
+        <button type="button" id="reset">Reset</button>
+      </div>
+
+      <details id="adv">
+        <summary>Damper settings and view</summary>
+        <div class="group">
+          <div class="field">
+            <div class="field-top"><label for="tune">Pendulum period</label><output id="tuneOut" for="tune"></output></div>
+            <input type="range" id="tune" min="4.5" max="10" step="0.05" value="6.84">
+            <span class="hint">The ball only helps when it swings at the tower's own rhythm (6.8 s). Engineers set this with the cable length.</span>
+          </div>
+          <div class="field">
+            <div class="field-top"><label for="damp">Hydraulic piston damping</label><output id="dampOut" for="damp"></output></div>
+            <input type="range" id="damp" min="0.5" max="25" step="0.1" value="4.5">
+            <span class="hint">Eight pistons under the ball turn its swing into heat. Too little and the ball just rings; too much and it can barely move.</span>
+          </div>
+          <div class="field">
+            <div class="field-top"><label for="exag">Sway drawn larger by</label><output id="exagOut" for="exag"></output></div>
+            <input type="range" id="exag" min="10" max="300" step="5" value="100">
+          </div>
+          <div class="field">
+            <div class="field-top"><label for="speed">Playback speed</label><output id="speedOut" for="speed"></output></div>
+            <input type="range" id="speed" min="0.5" max="5" step="0.5" value="2">
+          </div>
+          <button type="button" id="optimal">Restore optimal tuning</button>
+        </div>
+      </details>
+    </aside>
+  </section>
+
+  <section class="charts">
+    <div class="panel chart">
+      <h3>Roof sway, last 60 seconds</h3>
+      <div class="legend">
+        <span><i style="background: var(--rust)"></i>Without damper</span>
+        <span><i style="background: var(--jade)"></i>With damper</span>
+      </div>
+      <canvas id="trace" aria-label="Line chart of roof displacement over the last 60 seconds for both towers."></canvas>
+    </div>
+    <div class="panel chart">
+      <h3>Why rhythm matters: amplification vs. push period</h3>
+      <div class="legend">
+        <span><i style="background: var(--rust)"></i>Without damper</span>
+        <span><i style="background: var(--jade)"></i>With damper (current settings)</span>
+        <span><i style="background: var(--gold)"></i>Vortex shedding period now</span>
+      </div>
+      <canvas id="resp" aria-label="Frequency response chart showing how much a steady rhythmic push is amplified, with and without the damper."></canvas>
+    </div>
+  </section>
+
+  <section class="how">
+    <div class="group" style="gap: 18px">
+      <h2>How the ball calms the tower</h2>
+      <ol class="steps">
+        <li><div><h3>Wind pushes in a rhythm</h3><p>As wind flows past the tower it peels off in alternating swirls, left then right, called vortex shedding. Each swirl gives the tower a sideways nudge. The faster the wind, the faster the nudges come.</p></div></li>
+        <li><div><h3>The tower has a natural sway</h3><p>Like a tuning fork, Taipei 101 prefers to sway back and forth once every 6.8 seconds or so. When the gusts or swirls line up with that beat, each push adds to the last and the sway grows. That is resonance. Try the “Resonance lock-in” preset.</p></div></li>
+        <li><div><h3>The pendulum swings the other way</h3><p>The ball hangs on cables tuned to the same 6.8 s period. When the building leans one way, the ball lags behind and ends up swinging in the opposite direction, so its weight pulls the tower back toward center.</p></div></li>
+        <li><div><h3>Pistons soak up the energy</h3><p>Eight hydraulic cylinders connect the ball to the floor. Every swing forces oil through small valves, turning the tower's motion into a little heat. Energy that leaves through the pistons is energy the tower no longer sways with.</p></div></li>
+      </ol>
+    </div>
+    <div class="panel facts">
+      <h2>The real damper</h2>
+      <dl>
+        <dt>Mass</dt><dd>660 t</dd>
+        <dt>Diameter</dt><dd>5.5 m</dd>
+        <dt>Built from</dt><dd>41 steel plates, 12.5 cm each</dd>
+        <dt>Hangs between</dt><dd>floors 92 and 87</dd>
+        <dt>Seen from</dt><dd>observatory, floors 88–89</dd>
+        <dt>Energy absorbers</dt><dd>8 hydraulic pistons</dd>
+        <dt>Stopper ring limit</dt><dd>±1.5 m of travel</dd>
+        <dt>Tower height</dt><dd>508 m</dd>
+        <dt>Typhoon Soudelor, 2015</dt><dd>ball swung about 1 m</dd>
+      </dl>
+      <p class="note">The spire has two smaller 6-tonne dampers of its own, which this model leaves out.</p>
+    </div>
+  </section>
+
+  <p class="note">About the model: each tower is simplified to a single swaying mass (first mode, 6.8 s period, 1.2% structural damping, 120,000 t effective mass) with the 660 t pendulum attached to one of them. Wind force combines random gusts with vortex shedding at a Strouhal number of 0.14 on a 48 m wide tower. The numbers show how a tuned mass damper behaves; they are not engineering data for the real building.</p>
+</div>
+
+<script>
+(() => {
+  // ---------- Physics ----------
+  const TAU = 2 * Math.PI;
+  const Tn = 6.8, wn = TAU / Tn;          // tower's first-mode period
+  const M = 120e6;                          // effective (modal) mass, kg
+  const zs = 0.012;                         // structural damping ratio
+  const K = M * wn * wn, C = 2 * zs * M * wn;
+  const m = 660e3;                          // damper mass, kg
+  const mu = m / M;
+  const T_OPT = Tn * (1 + mu);
+  const Z_OPT = Math.sqrt(3 * mu / (8 * Math.pow(1 + mu, 3)));
+  const St = 0.14, D = 48;                  // Strouhal number, tower width (m)
+  const CV = 300, CB = 3500;                // force coefficients (calibrated)
+  const STOP = 1.5;                         // bumper ring travel, m
+  const G = 9.81;
+
+  const state = { U: 22, gust: 0.20, Td: T_OPT, zd: Z_OPT, exag: 100, speed: 2, paused: false };
+
+  let sim;
+  function resetSim() {
+    sim = {
+      t: 0, th: 0, u: 0,
+      a: { x: 0, v: 0, acc: 0 },
+      b: { x: 0, v: 0, acc: 0, y: 0, w: 0 },
+      hist: [], accum: 0, maxA: 0, maxB: 0, maxAccA: 0, maxAccB: 0, maxY: 0,
+      emaA: 0, emaB: 0, emaT: 0,
+    };
+  }
+  resetSim();
+
+  function randn() {
+    let u = 0; while (!u) u = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * Math.random());
+  }
+
+  const DT = 1 / 120, SAMPLE = 0.1, HIST_LEN = 600;
+  function step() {
+    const U = state.U;
+    const fs = St * U / D;
+    sim.th += TAU * fs * DT + 0.3 * Math.sqrt(DT) * randn();
+    const tauU = 4;
+    sim.u += (-sim.u / tauU) * DT + state.gust * U * Math.sqrt(2 * DT / tauU) * randn();
+    const F = CV * U * U * Math.sin(sim.th) + CB * U * sim.u;
+
+    // Tower A: no damper
+    const a = sim.a;
+    a.acc = (F - C * a.v - K * a.x) / M;
+    a.v += a.acc * DT; a.x += a.v * DT;
+
+    // Tower B: with pendulum (y = ball offset relative to the building)
+    const b = sim.b;
+    const wd = TAU / state.Td, kd = m * wd * wd, cd = 2 * state.zd * m * wd;
+    let fd = cd * b.w + kd * b.y;
+    const over = Math.abs(b.y) - STOP;
+    if (over > 0) fd += Math.sign(b.y) * over * kd * 40 + cd * 4 * b.w;  // bumper ring
+    b.acc = (F - C * b.v - K * b.x + fd) / M;
+    const ay = -fd / m - b.acc;
+    b.v += b.acc * DT; b.x += b.v * DT;
+    b.w += ay * DT; b.y += b.w * DT;
+
+    sim.t += DT;
+    // bookkeeping
+    sim.maxA = Math.max(sim.maxA, Math.abs(a.x));
+    sim.maxB = Math.max(sim.maxB, Math.abs(b.x));
+    sim.maxAccA = Math.max(sim.maxAccA, Math.abs(a.acc));
+    sim.maxAccB = Math.max(sim.maxAccB, Math.abs(b.acc));
+    sim.maxY = Math.max(sim.maxY, Math.abs(b.y));
+    sim.emaT += DT;
+    const k = DT / Math.min(30, sim.emaT);
+    sim.emaA += (a.x * a.x - sim.emaA) * k;
+    sim.emaB += (b.x * b.x - sim.emaB) * k;
+    sim.accum += DT;
+    if (sim.accum >= SAMPLE) {
+      sim.accum -= SAMPLE;
+      sim.hist.push({ a: a.x, b: b.x, pa: sim.maxA, pb: sim.maxB, qa: sim.maxAccA, qb: sim.maxAccB, y: sim.maxY });
+      if (sim.hist.length > HIST_LEN) sim.hist.shift();
+      sim.maxA = sim.maxB = sim.maxAccA = sim.maxAccB = sim.maxY = 0;
+    }
+  }
+
+  // ---------- Theme tokens ----------
+  let T = {};
+  const TOKENS = ["bg", "surface", "ink", "muted", "line", "jade", "rust", "gold", "gold-ink", "sky-top", "sky-bot", "glass", "glass-dark", "city", "chamber"];
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    TOKENS.forEach(n => { T[n] = cs.getPropertyValue("--" + n).trim(); });
+    drawResponse();
+  }
+  new MutationObserver(readTokens).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readTokens);
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+  // ---------- Canvas helpers ----------
+  function fit(canvas) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const r = canvas.getBoundingClientRect();
+    const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: r.width, h: r.height };
+  }
+
+  // ---------- Tower drawing ----------
+  const H_ROOF = 449, H_TOP = 508, H_DAMPER = 383;
+  const SEGMENTS = (() => {
+    const s = [{ h0: 0, h1: 100, w0: 62, w1: 44, floors: 6 }];
+    for (let i = 0; i < 8; i++) s.push({ h0: 100 + i * 34, h1: 134 + i * 34, w0: 38, w1: 50, floors: 7 });
+    s.push({ h0: 372, h1: 398, w0: 36, w1: 36, floors: 3 });
+    s.push({ h0: 398, h1: 430, w0: 32, w1: 27, floors: 3 });
+    s.push({ h0: 430, h1: 449, w0: 25, w1: 20, floors: 1 });
+    s.push({ h0: 449, h1: 462, w0: 9, w1: 6, floors: 0 });
+    s.push({ h0: 462, h1: 508, w0: 3.2, w1: 1.2, floors: 0 });
+    return s;
+  })();
+  const shape = h => Math.pow(h / H_ROOF, 1.6);
+
+  function drawTower(ctx, cx, ground, ppm, X, y, damper, label, labelColor) {
+    const off = h => X * state.exag * shape(h) * ppm;
+    const px = (h, dx) => cx + off(h) + dx * ppm;
+    const py = h => ground - h * ppm;
+
+    // rest outline
+    ctx.save();
+    ctx.setLineDash([3, 4]);
+    ctx.strokeStyle = T.muted; ctx.globalAlpha = 0.45; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx, py(0)); ctx.lineTo(cx, py(H_TOP) - 6); ctx.stroke();
+    ctx.restore();
+
+    for (const s of SEGMENTS) {
+      const g = ctx.createLinearGradient(px(s.h0, -s.w1 / 2), 0, px(s.h0, s.w1 / 2), 0);
+      g.addColorStop(0, T["glass-dark"]); g.addColorStop(0.45, T.glass); g.addColorStop(1, T["glass-dark"]);
+      ctx.fillStyle = g;
+      ctx.strokeStyle = T["glass-dark"]; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px(s.h0, -s.w0 / 2), py(s.h0));
+      ctx.lineTo(px(s.h0, s.w0 / 2), py(s.h0));
+      ctx.lineTo(px(s.h1, s.w1 / 2), py(s.h1));
+      ctx.lineTo(px(s.h1, -s.w1 / 2), py(s.h1));
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      if (s.floors) {
+        ctx.save(); ctx.globalAlpha = 0.28; ctx.strokeStyle = T.bg; ctx.lineWidth = 0.6;
+        for (let i = 1; i <= s.floors; i++) {
+          const f = i / (s.floors + 1), h = s.h0 + (s.h1 - s.h0) * f, w = s.w0 + (s.w1 - s.w0) * f;
+          ctx.beginPath(); ctx.moveTo(px(h, -w / 2), py(h)); ctx.lineTo(px(h, w / 2), py(h)); ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    // damper chamber cut-away (not to scale; see zoomed view below)
+    const cw = 22, h0 = 373, h1 = 396;
+    ctx.fillStyle = T.chamber;
+    ctx.beginPath();
+    ctx.moveTo(px(h0, -cw / 2), py(h0)); ctx.lineTo(px(h0, cw / 2), py(h0));
+    ctx.lineTo(px(h1, cw / 2), py(h1)); ctx.lineTo(px(h1, -cw / 2), py(h1));
+    ctx.closePath(); ctx.fill();
+    const r = Math.max(4, 7 * ppm);
+    const pivotX = px(h1, 0), pivotY = py(h1);
+    const ballX = px(H_DAMPER, 0) + (damper ? (y / STOP) * (cw / 2 - 7) * ppm : 0);
+    const ballY = py(H_DAMPER - 2);
+    ctx.strokeStyle = T.gold; ctx.globalAlpha = 0.8; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pivotX, pivotY); ctx.lineTo(ballX, ballY); ctx.stroke();
+    ctx.globalAlpha = damper ? 1 : 0.45;
+    const bg = ctx.createRadialGradient(ballX - r * 0.35, ballY - r * 0.35, r * 0.1, ballX, ballY, r);
+    bg.addColorStop(0, "#fbe7a1"); bg.addColorStop(0.55, T.gold); bg.addColorStop(1, "#6d5006");
+    ctx.fillStyle = bg;
+    ctx.beginPath(); ctx.arc(ballX, ballY, r, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // label
+    ctx.fillStyle = labelColor;
+    ctx.font = "600 13px " + getComputedStyle(document.body).getPropertyValue("--sans");
+    ctx.textAlign = "center";
+    ctx.fillText(label, cx, py(H_TOP) - 14);
+  }
+
+  // Wind streaks
+  const streaks = Array.from({ length: 70 }, () => ({ x: Math.random(), y: Math.random(), l: 0.5 + Math.random(), s: 0.7 + Math.random() * 0.6 }));
+
+  const sky = document.getElementById("sky");
+  function drawSky(dtReal) {
+    const { ctx, w, h } = fit(sky);
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, T["sky-top"]); g.addColorStop(1, T["sky-bot"]);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+
+    const ground = h - 22;
+    const ppm = (ground - 40) / H_TOP;
+
+    // wind streaks
+    if (!reduceMotion.matches && state.U > 0) {
+      ctx.strokeStyle = T.ink; ctx.lineWidth = 1;
+      const alpha = Math.min(0.35, 0.04 + state.U / 180);
+      for (const s of streaks) {
+        if (!state.paused) s.x += (state.U * 5.5 * s.s * dtReal * Math.min(state.speed, 2)) / w;
+        if (s.x > 1.1) { s.x = -0.1; s.y = Math.random(); }
+        const len = (8 + state.U * 1.1) * s.l;
+        const yy = 20 + s.y * (ground - 60);
+        ctx.globalAlpha = alpha * s.s;
+        ctx.beginPath(); ctx.moveTo(s.x * w, yy); ctx.lineTo(s.x * w - len, yy); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // city blocks
+    ctx.fillStyle = T.city;
+    const blocks = [0.02, 0.09, 0.14, 0.2, 0.43, 0.48, 0.54, 0.83, 0.89, 0.95];
+    blocks.forEach((bx, i) => {
+      const bh = 18 + ((i * 37) % 30);
+      ctx.fillRect(bx * w, ground - bh, w * 0.045, bh);
+    });
+    ctx.fillStyle = T.line; ctx.fillRect(0, ground, w, h - ground);
+
+    // wind label + scale note
+    ctx.fillStyle = T.muted; ctx.textAlign = "left";
+    ctx.font = "500 11px " + getComputedStyle(document.body).getPropertyValue("--mono");
+    ctx.fillText("WIND " + state.U + " m/s →", 12, 20);
+    ctx.textAlign = "right";
+    ctx.fillText("sway drawn ×" + state.exag, w - 12, 20);
+
+    drawTower(ctx, w * 0.3, ground, ppm, sim.a.x, 0, false, "No damper", T.rust);
+    drawTower(ctx, w * 0.7, ground, ppm, sim.b.x, sim.b.y, true, "With damper", T.jade);
+  }
+
+  // Zoomed chamber views, true scale
+  function drawChamber(canvas, y, free) {
+    const { ctx, w, h } = fit(canvas);
+    ctx.clearRect(0, 0, w, h);
+    const span = 15;                                // metres across the view
+    const ppm = w / span;
+    const R = 2.75 * Math.min(ppm, (h - 40) / 7.2);
+    const scale = R / 2.75;
+    const cx = w / 2, ceil = 14, by = h - 26 - R;
+    const bx = cx + (free ? y : 0) * scale;
+    const light = "rgba(255,255,255,0.55)";
+
+    // ceiling and floor
+    ctx.fillStyle = "rgba(255,255,255,0.12)";
+    ctx.fillRect(0, 0, w, ceil); ctx.fillRect(0, h - 12, w, 12);
+    // stopper ring limits
+    ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.setLineDash([3, 3]);
+    [-1, 1].forEach(sg => {
+      const x = cx + sg * (STOP * scale + R);
+      ctx.beginPath(); ctx.moveTo(x, by - R * 0.4); ctx.lineTo(x, by + R * 0.9); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    // cables
+    ctx.strokeStyle = light; ctx.lineWidth = 1.2;
+    [-0.75, -0.3, 0.3, 0.75].forEach(f => {
+      ctx.beginPath(); ctx.moveTo(cx + f * R, ceil); ctx.lineTo(bx + f * R * 0.8, by - R * 0.55); ctx.stroke();
+    });
+    // pistons (two visible of eight)
+    ctx.lineWidth = 3; ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    [-1, 1].forEach(sg => {
+      ctx.beginPath(); ctx.moveTo(cx + sg * R * 1.6, h - 12); ctx.lineTo(bx + sg * R * 0.55, by + R * 0.8); ctx.stroke();
+    });
+    // ball
+    ctx.save();
+    ctx.globalAlpha = free ? 1 : 0.4;
+    const g = ctx.createRadialGradient(bx - R * 0.35, by - R * 0.4, R * 0.1, bx, by, R);
+    g.addColorStop(0, "#fbe7a1"); g.addColorStop(0.5, "#d9ab2a"); g.addColorStop(1, "#6d5006");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(bx, by, R, 0, TAU); ctx.fill();
+    ctx.clip();
+    ctx.strokeStyle = "rgba(90,60,0,0.35)"; ctx.lineWidth = 0.6;
+    for (let i = -10; i <= 10; i++) { const yy = by + i * R / 10; ctx.beginPath(); ctx.moveTo(bx - R, yy); ctx.lineTo(bx + R, yy); ctx.stroke(); }
+    ctx.restore();
+
+    ctx.fillStyle = light;
+    ctx.font = "500 10.5px " + getComputedStyle(document.body).getPropertyValue("--mono");
+    ctx.textAlign = "left";
+    ctx.fillText("FLOORS 87–92 · TRUE SCALE", 8, ceil + 13);
+    ctx.textAlign = "right";
+    if (free) {
+      const cm = Math.round(y * 100);
+      ctx.fillText("ball " + (cm > 0 ? "+" : "") + cm + " cm", w - 8, ceil + 13);
+    } else {
+      ctx.fillText("LOCKED", w - 8, ceil + 13);
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.fillRect(bx - R - 8, by - 4, 8, 8); ctx.fillRect(bx + R, by - 4, 8, 8);
+    }
+  }
+
+  // ---------- Charts ----------
+  function niceStep(max) {
+    const raw = max / 3, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+    return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p;
+  }
+  const monoFont = () => "500 10.5px " + getComputedStyle(document.body).getPropertyValue("--mono");
+
+  const traceCv = document.getElementById("trace");
+  function drawTrace() {
+    const { ctx, w, h } = fit(traceCv);
+    ctx.clearRect(0, 0, w, h);
+    const L = 44, R = 8, Tp = 8, B = 22;
+    const pw = w - L - R, ph = h - Tp - B;
+    let maxAbs = 0;
+    for (const s of sim.hist) maxAbs = Math.max(maxAbs, Math.abs(s.a), Math.abs(s.b));
+    maxAbs = Math.max(maxAbs * 100 * 1.1, 1);          // cm
+    const stp = niceStep(maxAbs);
+    const top = Math.ceil(maxAbs / stp) * stp;
+    const yOf = v => Tp + ph / 2 - (v / top) * (ph / 2);
+    ctx.font = monoFont(); ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let v = -top; v <= top + 1e-9; v += stp) {
+      const yy = yOf(v);
+      ctx.strokeStyle = T.line; ctx.lineWidth = Math.abs(v) < 1e-9 ? 1.2 : 0.6;
+      ctx.beginPath(); ctx.moveTo(L, yy); ctx.lineTo(w - R, yy); ctx.stroke();
+      ctx.fillStyle = T.muted;
+      ctx.fillText((Math.round(v * 10) / 10) + " cm", L - 6, yy);
+    }
+    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    [60, 45, 30, 15, 0].forEach(s => {
+      const x = L + pw * (1 - s / 60);
+      ctx.fillStyle = T.muted; ctx.fillText(s === 0 ? "now" : "−" + s + " s", Math.min(x, w - R - 12), h - 6);
+    });
+    const n = sim.hist.length;
+    const xOf = i => L + pw * (1 - (n - 1 - i) / HIST_LEN);
+    [["a", T.rust], ["b", T.jade]].forEach(([k, col]) => {
+      ctx.strokeStyle = col; ctx.lineWidth = 1.8; ctx.beginPath();
+      sim.hist.forEach((s, i) => { const x = xOf(i), y = yOf(s[k] * 100); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+      ctx.stroke();
+      if (n) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(xOf(n - 1), yOf(sim.hist[n - 1][k] * 100), 3, 0, TAU); ctx.fill(); }
+    });
+  }
+
+  // steady-state amplification |x| / (F/K)
+  function ampBare(w) { const r = w / wn; return 1 / Math.hypot(1 - r * r, 2 * zs * r); }
+  function ampTMD(w) {
+    const wd = TAU / state.Td, kd = m * wd * wd, cd = 2 * state.zd * m * wd;
+    const dsr = K - M * w * w - m * w * w, dsi = C * w;
+    const dtr = kd - m * w * w, dti = cd * w;
+    const num = Math.pow(m * w * w, 2);
+    const den = dtr * dtr + dti * dti;               // num / (dtr + i dti)
+    const qr = num * dtr / den, qi = -num * dti / den;
+    return K / Math.hypot(dsr - qr, dsi - qi);
+  }
+
+  const respCv = document.getElementById("resp");
+  function drawResponse() {
+    if (!T.ink) return;
+    const { ctx, w, h } = fit(respCv);
+    ctx.clearRect(0, 0, w, h);
+    const L = 36, R = 10, Tp = 14, B = 22;
+    const pw = w - L - R, ph = h - Tp - B;
+    const Pmin = 4.5, Pmax = 10;
+    const xOf = P => L + (P - Pmin) / (Pmax - Pmin) * pw;
+    const top = 45;
+    const yOf = v => Tp + ph - Math.min(v, top) / top * ph;
+    ctx.font = monoFont();
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let v = 0; v <= top; v += 10) {
+      ctx.strokeStyle = T.line; ctx.lineWidth = 0.6;
+      ctx.beginPath(); ctx.moveTo(L, yOf(v)); ctx.lineTo(w - R, yOf(v)); ctx.stroke();
+      ctx.fillStyle = T.muted; ctx.fillText(v + "×", L - 6, yOf(v));
+    }
+    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    for (let P = 5; P <= 10; P++) { ctx.fillStyle = T.muted; ctx.fillText(P + " s", xOf(P), h - 6); }
+
+    const draw = (fn, col) => {
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath();
+      for (let i = 0; i <= 300; i++) {
+        const P = Pmin + (Pmax - Pmin) * i / 300, v = fn(TAU / P);
+        i ? ctx.lineTo(xOf(P), yOf(v)) : ctx.moveTo(xOf(P), yOf(v));
+      }
+      ctx.stroke();
+    };
+    draw(ampBare, T.rust);
+    draw(ampTMD, T.jade);
+
+    // current vortex shedding period
+    ctx.fillStyle = T["gold-ink"]; ctx.strokeStyle = T.gold; ctx.lineWidth = 2;
+    const Ts = state.U > 0 ? D / (St * state.U) : Infinity;
+    if (Ts >= Pmin && Ts <= Pmax) {
+      const x = xOf(Ts);
+      ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(x, Tp); ctx.lineTo(x, Tp + ph); ctx.stroke(); ctx.setLineDash([]);
+      ctx.textAlign = x > w - 90 ? "right" : "left";
+      ctx.fillText("swirls every " + Ts.toFixed(1) + " s", x + (x > w - 90 ? -5 : 5), Tp + 4);
+    } else {
+      const right = Ts > Pmax;
+      ctx.textAlign = right ? "right" : "left";
+      const label = isFinite(Ts) ? "swirls every " + Ts.toFixed(1) + " s " + (right ? "→" : "") : "no wind";
+      ctx.fillText(right ? label : "← " + label, right ? w - R : L + 4, Tp + 4);
+    }
+  }
+
+  // ---------- Readouts ----------
+  const $ = id => document.getElementById(id);
+  const cm = v => { const c = v * 100; return (Math.abs(c) < 10 ? c.toFixed(1) : Math.round(c)) + " cm"; };
+  function feel(mg) {
+    if (mg < 5) return '<span class="chip ok">Not felt</span>';
+    if (mg < 15) return '<span class="chip warn">Noticeable</span>';
+    if (mg < 35) return '<span class="chip bad">Uncomfortable</span>';
+    return '<span class="chip bad">Hard to stand</span>';
+  }
+  function updateReadouts() {
+    const recent = sim.hist.slice(-300);
+    let pa = 0, pb = 0, qa = 0, qb = 0, yy = 0;
+    for (const s of recent) { pa = Math.max(pa, s.pa); pb = Math.max(pb, s.pb); qa = Math.max(qa, s.qa); qb = Math.max(qb, s.qb); yy = Math.max(yy, s.y); }
+    const mgA = qa / G * 1000, mgB = qb / G * 1000;
+    $("aNow").textContent = cm(sim.a.x);
+    $("bNow").textContent = cm(sim.b.x);
+    $("aPeak").textContent = cm(pa);
+    $("bPeak").textContent = cm(pb);
+    $("aAcc").textContent = mgA.toFixed(1) + " milli-g";
+    $("bAcc").textContent = mgB.toFixed(1) + " milli-g";
+    const fa = feel(mgA); if ($("aFeel").innerHTML !== fa) $("aFeel").innerHTML = fa;
+    $("bBall").textContent = cm(yy) + (yy >= STOP ? " · hit stopper" : "");
+    if (sim.emaT > 10 && sim.emaA > 1e-8) {
+      const red = 1 - Math.sqrt(sim.emaB / sim.emaA);
+      $("reduction").textContent = Math.round(red * 100) + "%";
+      $("reduction").style.color = red >= 0.05 ? "var(--jade)" : "var(--rust)";
+    } else {
+      $("reduction").textContent = "–";
+    }
+  }
+
+  // ---------- Controls ----------
+  const wind = $("wind"), gust = $("gust"), tune = $("tune"), damp = $("damp"), exag = $("exag"), speed = $("speed");
+  function category(U) {
+    if (U < 1) return "Calm air";
+    if (U < 10.8) return "Breeze (Beaufort 1–5)";
+    if (U < 17.2) return "Strong wind (Beaufort 6–7)";
+    if (U < 32.7) return "Gale to storm (Beaufort 8–11)";
+    if (U < 51) return "Typhoon force";
+    return "Severe typhoon force";
+  }
+  function syncLabels() {
+    $("windOut").textContent = state.U + " m/s · " + Math.round(state.U * 3.6) + " km/h";
+    $("windCat").textContent = category(state.U) + ". Wind this high up is much stronger than at street level.";
+    $("gustOut").textContent = Math.round(state.gust * 100) + "%";
+    const opt = Math.abs(state.Td - T_OPT) < 0.03;
+    $("tuneOut").textContent = state.Td.toFixed(2) + " s" + (opt ? " · optimal" : "");
+    const optZ = Math.abs(state.zd - Z_OPT) < 0.002;
+    $("dampOut").textContent = (state.zd * 100).toFixed(1) + "%" + (optZ ? " · optimal" : "");
+    $("exagOut").textContent = "×" + state.exag;
+    $("speedOut").textContent = state.speed + "× real time";
+    drawResponse();
+  }
+  function readInputs() {
+    state.U = +wind.value; state.gust = +gust.value / 100;
+    state.Td = +tune.value; state.zd = +damp.value / 100;
+    state.exag = +exag.value; state.speed = +speed.value;
+    syncLabels();
+  }
+  function restartAverage() { sim.emaA = sim.emaB = sim.emaT = 0; }
+  [wind, gust, tune, damp].forEach(el => el.addEventListener("input", restartAverage));
+  [wind, gust, tune, damp, exag, speed].forEach(el => el.addEventListener("input", () => { clearPreset(); readInputs(); }));
+
+  const PRESETS = {
+    breeze:   { U: 10, gust: 15, opt: true,  note: "A typical day. The tower moves less than a centimetre and nobody inside notices." },
+    monsoon:  { U: 22, gust: 20, opt: true,  note: "Northeast monsoon gusts in winter. Sway is a few centimetres; the ball starts to swing visibly." },
+    soudelor: { U: 45, gust: 25, opt: true,  note: "Roughly the wind at the top during Typhoon Soudelor in August 2015, when the real ball swung about 1 m." },
+    lockin:   { U: 50, gust: 8,  opt: true,  note: "Wind swirls now peel off every 6.8 s, matching the tower's own sway. This is where the damper earns its keep." },
+    mistuned: { U: 50, gust: 8,  opt: false, Td: 8.2, note: "Same lock-in wind, but the pendulum is too long (8.2 s). Out of step with the tower, it barely helps." },
+  };
+  function clearPreset() {
+    document.querySelectorAll("#presets button").forEach(b => b.setAttribute("aria-pressed", "false"));
+  }
+  function applyPreset(name) {
+    const p = PRESETS[name];
+    wind.value = p.U; gust.value = p.gust;
+    tune.value = p.opt ? T_OPT.toFixed(2) : p.Td;
+    damp.value = (Z_OPT * 100).toFixed(1);
+    clearPreset();
+    document.querySelector(`[data-preset="${name}"]`).setAttribute("aria-pressed", "true");
+    $("presetNote").textContent = p.note;
+    readInputs();
+    restartAverage();
+    if (!p.opt) $("adv").open = true;
+  }
+  document.querySelectorAll("#presets button").forEach(b => b.addEventListener("click", () => applyPreset(b.dataset.preset)));
+
+  $("shove").addEventListener("click", () => { sim.a.v += 0.12; sim.b.v += 0.12; });
+  $("pause").addEventListener("click", e => {
+    state.paused = !state.paused;
+    e.currentTarget.setAttribute("aria-pressed", String(state.paused));
+    e.currentTarget.textContent = state.paused ? "Resume" : "Pause";
+  });
+  $("reset").addEventListener("click", () => { resetSim(); drawTrace(); updateReadouts(); });
+  $("optimal").addEventListener("click", () => {
+    tune.value = T_OPT.toFixed(2); damp.value = (Z_OPT * 100).toFixed(1); readInputs(); restartAverage();
+  });
+
+  // ---------- Loop ----------
+  const chamberA = $("chamberA"), chamberB = $("chamberB");
+  let last = performance.now(), uiTimer = 0;
+  function frame(now) {
+    const dtReal = Math.min(0.1, (now - last) / 1000); last = now;
+    if (!state.paused) {
+      const n = Math.round(dtReal * state.speed / DT);
+      for (let i = 0; i < n; i++) step();
+    }
+    drawSky(dtReal);
+    drawChamber(chamberA, 0, false);
+    drawChamber(chamberB, sim.b.y, true);
+    drawTrace();
+    uiTimer += dtReal;
+    if (uiTimer > 0.2) { uiTimer = 0; updateReadouts(); }
+    requestAnimationFrame(frame);
+  }
+
+  // Warm up so the page opens in a working state
+  readTokens();
+  applyPreset("monsoon");
+  for (let i = 0; i < 40 / DT; i++) step();
+  updateReadouts();
+  window.addEventListener("resize", drawResponse);
+  requestAnimationFrame(frame);
+})();
+</script>
