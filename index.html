@@ -135,6 +135,7 @@
   .verdict strong { font: 800 30px/1 var(--display); color: var(--jade); font-variant-numeric: tabular-nums; }
   .verdict .v-text { font-size: 14px; color: var(--muted); }
   .verdict .v-text b { color: var(--ink); font-weight: 600; }
+  .verdict .v-sub { flex-basis: 100%; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
   #sky { display: block; width: 100%; height: 440px; }
 
   .cols { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
@@ -184,6 +185,8 @@
   details .group { gap: 14px; }
 
   .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .chart.wide { grid-column: 1 / -1; }
+  .chart .note { max-width: 80ch; }
   @media (max-width: 900px) { .charts { grid-template-columns: 1fr; } }
   .chart { padding: 16px 18px; display: grid; gap: 8px; min-width: 0; }
   .chart canvas { width: 100%; height: 230px; display: block; }
@@ -217,8 +220,9 @@
   <section class="lab">
     <div class="panel stage">
       <div class="verdict" aria-live="polite">
-        <span class="v-text" id="verdictText">Averaged over the last 30 s, the damper cuts roof sway by</span>
+        <span class="v-text" id="verdictText">At this wind the damper should cut roof sway by</span>
         <strong id="reduction">–</strong>
+        <span class="v-sub" id="measuredText"></span>
       </div>
       <canvas id="sky" aria-label="Animated side view of two Taipei 101 towers swaying in the wind. Left tower has no damper, right tower has the damper."></canvas>
       <div class="cols">
@@ -322,6 +326,16 @@
       </div>
       <canvas id="resp" aria-label="Frequency response chart showing how much a steady rhythmic push is amplified, with and without the damper."></canvas>
     </div>
+    <div class="panel chart wide">
+      <h3>Damper effect across wind speeds</h3>
+      <div class="legend">
+        <span><i style="background: var(--jade)"></i>Expected sway reduction (worked out from the physics, current damper and gust settings)</span>
+        <span><i style="background: var(--ink)"></i>Measured on the towers above, since the last change</span>
+        <span><i style="background: var(--gold)"></i>Current wind</span>
+      </div>
+      <canvas id="redChart" aria-label="Line chart of expected roof sway reduction versus wind speed, with the current wind and the live measurement marked."></canvas>
+      <p class="note">The damper removes roughly the same share of sway at every wind speed, because doubling the wind doubles every push and the tower's reply alike. The bump near 50 m/s is resonance lock-in: the wind's swirls arrive every 6.8 s, the tower's own rhythm, and that is exactly what the pendulum is tuned for. A measurement over a few minutes wanders well above and below this line, because the tower completes only about nine swings a minute and random gusts dominate so few swings. The curve leaves out the stopper ring, which only comes into play in the most extreme winds.</p>
+    </div>
   </section>
 
   <section class="how">
@@ -370,6 +384,7 @@
   const CV = 300, CB = 3500;                // force coefficients (calibrated)
   const STOP = 1.5;                         // bumper ring travel, m
   const G = 9.81;
+  const SETTLE = 60, AVG_MIN = 60;            // seconds of simulated time: ignored after a change, then needed before showing
 
   const state = { U: 22, gust: 0.20, Td: T_OPT, zd: Z_OPT, exag: 100, speed: 2, paused: false };
 
@@ -380,7 +395,7 @@
       a: { x: 0, v: 0, acc: 0 },
       b: { x: 0, v: 0, acc: 0, y: 0, w: 0 },
       hist: [], accum: 0, maxA: 0, maxB: 0, maxAccA: 0, maxAccB: 0, maxY: 0,
-      emaA: 0, emaB: 0, emaT: 0,
+      emaA: 0, emaB: 0, emaT: 0, settle: SETTLE,
     };
   }
   resetSim();
@@ -422,10 +437,14 @@
     sim.maxAccA = Math.max(sim.maxAccA, Math.abs(a.acc));
     sim.maxAccB = Math.max(sim.maxAccB, Math.abs(b.acc));
     sim.maxY = Math.max(sim.maxY, Math.abs(b.y));
-    sim.emaT += DT;
-    const k = DT / Math.min(30, sim.emaT);
-    sim.emaA += (a.x * a.x - sim.emaA) * k;
-    sim.emaB += (b.x * b.x - sim.emaB) * k;
+    // running mean of squared sway since the last change, after letting old motion die out
+    if (sim.settle > 0) sim.settle -= DT;
+    else {
+      sim.emaT += DT;
+      const k = DT / sim.emaT;
+      sim.emaA += (a.x * a.x - sim.emaA) * k;
+      sim.emaB += (b.x * b.x - sim.emaB) * k;
+    }
     sim.accum += DT;
     if (sim.accum >= SAMPLE) {
       sim.accum -= SAMPLE;
@@ -763,12 +782,109 @@
     $("bAcc").textContent = mgB.toFixed(1) + " milli-g";
     const fa = feel(mgA); if ($("aFeel").innerHTML !== fa) $("aFeel").innerHTML = fa;
     $("bBall").textContent = cm(yy) + (yy >= STOP ? " · hit stopper" : "");
-    if (sim.emaT > 10 && sim.emaA > 1e-8) {
-      const red = 1 - Math.sqrt(sim.emaB / sim.emaA);
-      $("reduction").textContent = Math.round(red * 100) + "%";
-      $("reduction").style.color = red >= 0.05 ? "var(--jade)" : "var(--rust)";
+    if (state.U >= 1) {
+      const ev = expectedReduction(state.U);
+      $("verdictText").textContent = "At " + state.U + " m/s the damper should cut roof sway by";
+      $("reduction").textContent = Math.round(ev * 100) + "%";
+      $("reduction").style.color = ev >= 0.05 ? "var(--jade)" : "var(--rust)";
     } else {
+      $("verdictText").textContent = "No wind, so there is nothing to damp. Try a shove.";
       $("reduction").textContent = "–";
+    }
+    const mins = t => Math.floor(t / 60) + " min " + String(Math.floor(t % 60)).padStart(2, "0") + " s";
+    if (sim.emaT >= AVG_MIN && sim.emaA > 1e-10) {
+      measured = 1 - Math.sqrt(sim.emaB / sim.emaA);
+      $("measuredText").textContent = "Measured on the towers above: " + Math.round(measured * 100) + "% over " + mins(sim.emaT) +
+        " of simulated time. Gusts make short measurements wander; it closes in on the expected value the longer it runs.";
+    } else {
+      measured = null;
+      $("measuredText").textContent = sim.settle > 0
+        ? "Measured on the towers above: waiting " + Math.ceil(sim.settle) + " s of simulated time for the old motion to die out."
+        : "Measured on the towers above: collecting, " + Math.floor(sim.emaT) + " of " + AVG_MIN + " s.";
+    }
+    drawReductionChart();
+  }
+
+  // ---------- Expected reduction vs wind speed (from the force spectrum) ----------
+  // Wind force = vortex shedding (a sine with a randomly drifting phase, whose spectrum is a
+  // narrow peak at the shedding frequency) + gusts (a smoothed random process). Sway variance
+  // is the force spectrum times each tower's response squared, summed over frequency.
+  const PHASE_GAMMA = 0.3 * 0.3 / 2, GUST_TAU = 4, DW = 0.0015;
+  let measured = null, redCurve = null, redKey = "";
+  function expectedReduction(U) {
+    const wd = TAU / state.Td, kd = m * wd * wd, cd = 2 * state.zd * m * wd;
+    const ws = TAU * St * U / D, A = CV * U * U, sg = state.gust * U * CB * U;
+    let va = 0, vb = 0;
+    for (let w = DW / 2; w < 4; w += DW) {
+      const l1 = PHASE_GAMMA / Math.PI / ((w - ws) ** 2 + PHASE_GAMMA ** 2);
+      const l2 = PHASE_GAMMA / Math.PI / ((w + ws) ** 2 + PHASE_GAMMA ** 2);
+      const S = A * A / 2 * (l1 + l2) + sg * sg * (2 * GUST_TAU / Math.PI) / (1 + (w * GUST_TAU) ** 2);
+      const dsr = K - M * w * w, dsi = C * w;
+      va += S / (dsr * dsr + dsi * dsi);
+      const dtr = kd - m * w * w, dti = cd * w, num = (m * w * w) ** 2, den = dtr * dtr + dti * dti;
+      const er = dsr - m * w * w - num * dtr / den, ei = dsi + num * dti / den;
+      vb += S / (er * er + ei * ei);
+    }
+    return va > 0 ? 1 - Math.sqrt(vb / va) : 0;
+  }
+  function getRedCurve() {
+    const key = [state.gust, state.Td, state.zd].join("|");
+    if (key !== redKey) {
+      redKey = key; redCurve = [];
+      for (let U = 1; U <= 70; U += 0.5) redCurve.push([U, expectedReduction(U)]);
+    }
+    return redCurve;
+  }
+
+  const redCv = document.getElementById("redChart");
+  function drawReductionChart() {
+    if (!T.ink) return;
+    const curve = getRedCurve();
+    const { ctx, w, h } = fit(redCv);
+    ctx.clearRect(0, 0, w, h);
+    const L = 40, R = 12, Tp = 22, B = 22;
+    const pw = w - L - R, ph = h - Tp - B;
+    let lo = 0, hi = 0.6;
+    for (const [, v] of curve) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    if (measured !== null) { lo = Math.min(lo, measured); hi = Math.max(hi, measured); }
+    lo = Math.floor(lo * 10) / 10; hi = Math.ceil(hi * 10) / 10;
+    const xOf = U => L + U / 70 * pw;
+    const yOf = v => Tp + (hi - v) / (hi - lo) * ph;
+    ctx.font = monoFont();
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let v = lo; v <= hi + 1e-9; v += 0.1) {
+      ctx.strokeStyle = T.line; ctx.lineWidth = Math.abs(v) < 1e-9 ? 1.2 : 0.6;
+      ctx.beginPath(); ctx.moveTo(L, yOf(v)); ctx.lineTo(w - R, yOf(v)); ctx.stroke();
+      ctx.fillStyle = T.muted; ctx.fillText(Math.round(v * 100) + "%", L - 6, yOf(v));
+    }
+    ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    for (let U = 0; U <= 70; U += 10) { ctx.fillStyle = T.muted; ctx.fillText(U + (U === 70 ? " m/s" : ""), Math.min(xOf(U), w - R - 16), h - 6); }
+
+    // area + line
+    ctx.beginPath();
+    curve.forEach(([U, v], i) => i ? ctx.lineTo(xOf(U), yOf(v)) : ctx.moveTo(xOf(U), yOf(v)));
+    ctx.lineTo(xOf(70), yOf(Math.max(lo, 0))); ctx.lineTo(xOf(curve[0][0]), yOf(Math.max(lo, 0))); ctx.closePath();
+    ctx.globalAlpha = 0.12; ctx.fillStyle = T.jade; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = T.jade; ctx.lineWidth = 2; ctx.beginPath();
+    curve.forEach(([U, v], i) => i ? ctx.lineTo(xOf(U), yOf(v)) : ctx.moveTo(xOf(U), yOf(v)));
+    ctx.stroke();
+
+    // current wind
+    if (state.U >= 1) {
+      const x = xOf(state.U), ev = expectedReduction(state.U);
+      ctx.strokeStyle = T.gold; ctx.setLineDash([4, 3]); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x, Tp); ctx.lineTo(x, Tp + ph); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = T.jade; ctx.beginPath(); ctx.arc(x, yOf(ev), 4.5, 0, TAU); ctx.fill();
+      const right = x > w - 200;
+      ctx.textAlign = right ? "right" : "left";
+      ctx.fillStyle = T["gold-ink"];
+      let label = state.U + " m/s: expected " + Math.round(ev * 100) + "%";
+      if (measured !== null) label += ", measured " + Math.round(measured * 100) + "%";
+      ctx.fillText(label, x + (right ? -7 : 7), Tp - 8);
+      if (measured !== null) {
+        ctx.strokeStyle = T.ink; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, yOf(measured), 5.5, 0, TAU); ctx.stroke();
+      }
     }
   }
 
@@ -800,7 +916,7 @@
     state.exag = +exag.value; state.speed = +speed.value;
     syncLabels();
   }
-  function restartAverage() { sim.emaA = sim.emaB = sim.emaT = 0; }
+  function restartAverage() { sim.emaA = sim.emaB = sim.emaT = 0; sim.settle = SETTLE; }
   [wind, gust, tune, damp].forEach(el => el.addEventListener("input", restartAverage));
   [wind, gust, tune, damp, exag, speed].forEach(el => el.addEventListener("input", () => { clearPreset(); readInputs(); }));
 
@@ -860,9 +976,9 @@
   // Warm up so the page opens in a working state
   readTokens();
   applyPreset("monsoon");
-  for (let i = 0; i < 40 / DT; i++) step();
+  for (let i = 0; i < 130 / DT; i++) step();
   updateReadouts();
-  window.addEventListener("resize", drawResponse);
+  window.addEventListener("resize", () => { drawResponse(); drawReductionChart(); });
   requestAnimationFrame(frame);
 })();
 </script>
