@@ -547,7 +547,7 @@
 
     // label
     ctx.fillStyle = labelColor;
-    ctx.font = "600 13px " + getComputedStyle(document.body).getPropertyValue("--sans");
+    ctx.font = "600 " + (ctx.canvas.clientWidth < 380 ? 12 : 13) + "px " + getComputedStyle(document.body).getPropertyValue("--sans");
     ctx.textAlign = "center";
     ctx.fillText(label, cx, py(H_TOP) - 10);
   }
@@ -573,7 +573,7 @@
         if (!state.paused) s.x += (state.U * 5.5 * s.s * dtReal * Math.min(state.speed, 2)) / w;
         if (s.x > 1.1) { s.x = -0.1; s.y = Math.random(); }
         const len = (8 + state.U * 1.1) * s.l;
-        const yy = 20 + s.y * (ground - 60);
+        const yy = 62 + s.y * (ground - 82);   // stay below the text rows
         ctx.globalAlpha = alpha * s.s;
         ctx.beginPath(); ctx.moveTo(s.x * w, yy); ctx.lineTo(s.x * w - len, yy); ctx.stroke();
       }
