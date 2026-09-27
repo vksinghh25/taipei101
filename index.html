@@ -549,7 +549,7 @@
     ctx.fillStyle = labelColor;
     ctx.font = "600 13px " + getComputedStyle(document.body).getPropertyValue("--sans");
     ctx.textAlign = "center";
-    ctx.fillText(label, cx, py(H_TOP) - 14);
+    ctx.fillText(label, cx, py(H_TOP) - 10);
   }
 
   // Wind streaks
@@ -563,7 +563,7 @@
     ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
 
     const ground = h - 22;
-    const ppm = (ground - 40) / H_TOP;
+    const ppm = (ground - 58) / H_TOP;   // leaves a row for the notes and a row for the tower labels
 
     // wind streaks
     if (!reduceMotion.matches && state.U > 0) {
@@ -592,9 +592,9 @@
     // wind label + scale note
     ctx.fillStyle = T.muted; ctx.textAlign = "left";
     ctx.font = "500 11px " + getComputedStyle(document.body).getPropertyValue("--mono");
-    ctx.fillText("WIND " + state.U + " m/s →", 12, 20);
+    ctx.fillText("WIND " + state.U + " m/s →", 12, 18);
     ctx.textAlign = "right";
-    ctx.fillText("sway drawn ×" + state.exag, w - 12, 20);
+    ctx.fillText("sway drawn ×" + state.exag, w - 12, 18);
 
     drawTower(ctx, w * 0.3, ground, ppm, sim.a.x, 0, false, "No damper", T.rust);
     drawTower(ctx, w * 0.7, ground, ppm, sim.b.x, sim.b.y, true, "With damper", T.jade);
@@ -606,9 +606,9 @@
     ctx.clearRect(0, 0, w, h);
     const span = 15;                                // metres across the view
     const ppm = w / span;
-    const R = 2.75 * Math.min(ppm, (h - 40) / 7.2);
+    const R = 2.75 * Math.min(ppm, (h - 50) / 7.2);
     const scale = R / 2.75;
-    const cx = w / 2, ceil = 14, by = h - 26 - R;
+    const cx = w / 2, ceil = 22, by = h - 26 - R;
     const bx = cx + (free ? y : 0) * scale;
     const light = "rgba(255,255,255,0.55)";
 
@@ -647,13 +647,13 @@
     ctx.fillStyle = light;
     ctx.font = "500 10.5px " + getComputedStyle(document.body).getPropertyValue("--mono");
     ctx.textAlign = "left";
-    ctx.fillText("FLOORS 87–92 · TRUE SCALE", 8, ceil + 13);
+    ctx.fillText("FLOORS 87–92 · TRUE SCALE", 8, 15);
     ctx.textAlign = "right";
     if (free) {
       const cm = Math.round(y * 100);
-      ctx.fillText("ball " + (cm > 0 ? "+" : "") + cm + " cm", w - 8, ceil + 13);
+      ctx.fillText("ball " + (cm > 0 ? "+" : "") + cm + " cm", w - 8, 15);
     } else {
-      ctx.fillText("LOCKED", w - 8, ceil + 13);
+      ctx.fillText("LOCKED", w - 8, 15);
       ctx.fillStyle = "rgba(255,255,255,0.5)";
       ctx.fillRect(bx - R - 8, by - 4, 8, 8); ctx.fillRect(bx + R, by - 4, 8, 8);
     }
