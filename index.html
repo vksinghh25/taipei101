@@ -549,7 +549,7 @@
     ctx.fillStyle = labelColor;
     ctx.font = "600 " + (ctx.canvas.clientWidth < 380 ? 12 : 13) + "px " + getComputedStyle(document.body).getPropertyValue("--sans");
     ctx.textAlign = "center";
-    ctx.fillText(label, cx, py(H_TOP) - 10);
+    ctx.fillText(label, cx, ground + 20);   // in the ground strip, under the tower
   }
 
   // Wind streaks
@@ -562,8 +562,8 @@
     g.addColorStop(0, T["sky-top"]); g.addColorStop(1, T["sky-bot"]);
     ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
 
-    const ground = h - 22;
-    const ppm = (ground - 58) / H_TOP;   // leaves a row for the notes and a row for the tower labels
+    const ground = h - 30;
+    const ppm = (ground - 36) / H_TOP;   // leaves a row at the top for the notes
 
     // wind streaks
     if (!reduceMotion.matches && state.U > 0) {
@@ -573,7 +573,7 @@
         if (!state.paused) s.x += (state.U * 5.5 * s.s * dtReal * Math.min(state.speed, 2)) / w;
         if (s.x > 1.1) { s.x = -0.1; s.y = Math.random(); }
         const len = (8 + state.U * 1.1) * s.l;
-        const yy = 62 + s.y * (ground - 82);   // stay below the text rows
+        const yy = 34 + s.y * (ground - 50);   // stay below the notes row
         ctx.globalAlpha = alpha * s.s;
         ctx.beginPath(); ctx.moveTo(s.x * w, yy); ctx.lineTo(s.x * w - len, yy); ctx.stroke();
       }
